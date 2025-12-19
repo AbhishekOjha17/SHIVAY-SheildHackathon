@@ -1,0 +1,2 @@
+"""Hospital Notification System"""
+

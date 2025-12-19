@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: shivay-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: shivay_emergency
+    volumes:
+      - mongodb_data:/data/db
+      - ./infrastructure/mongodb/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - shivay-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    container_name: shivay-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shivay-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+    container_name: shivay-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis://redis:6379
+      - ENV=development
+    volumes:
+      - ./backend:/app
+      - ./shared:/app/shared
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - shivay-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile
+    container_name: shivay-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - shivay-network
+    command: npm run dev
+
+  # ML Agents Service
+  ml-agents:
+    build:
+      context: ./ml-agents
+      dockerfile: ../infrastructure/docker/ml-agents.Dockerfile
+    container_name: shivay-ml-agents
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGODB_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - ./ml-agents:/app
+      - ./shared:/app/shared
+      - ml_models:/app/models
+    depends_on:
+      - mongodb
+      - redis
+      - backend
+    networks:
+      - shivay-network
+
+  # Action Systems Service
+  action-systems:
+    build:
+      context: ./action-systems
+      dockerfile: ../infrastructure/docker/action-systems.Dockerfile
+    container_name: shivay-action-systems
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGODB_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - ./action-systems:/app
+      - ./shared:/app/shared
+    depends_on:
+      - mongodb
+      - redis
+      - backend
+    networks:
+      - shivay-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+  ml_models:
+
+networks:
+  shivay-network:
+    driver: bridge
+

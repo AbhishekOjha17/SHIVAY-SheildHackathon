@@ -1,0 +1,27 @@
+# FastAPI
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Database
+motor==3.3.2
+pymongo==4.6.0
+
+# HTTP Client
+httpx==0.25.2
+aiohttp==3.9.1
+
+# GPS/Routing
+googlemaps==4.10.0
+
+# Communication
+twilio==8.10.0
+
+# Utilities
+python-dotenv==1.0.0
+loguru==0.7.2
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
