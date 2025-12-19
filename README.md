@@ -166,3 +166,4 @@ pytest
 
 Team TrailPeriod
 
+<img width="2560" height="1396" alt="TechStackFinal" src="https://github.com/user-attachments/assets/ebd5a345-4948-4932-94bb-c9cf24f5bb3e" />
