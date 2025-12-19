@@ -160,11 +160,9 @@ cd ml-agents
 pytest
 ```
 
-## 📝 License
 
-MIT License
 
 ## 👥 Contributors
 
-Shivay Emergency Response Platform Team
+Team TrailPeriod
 
